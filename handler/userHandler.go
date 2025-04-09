@@ -20,7 +20,6 @@ func NewUserHandler(ur *repo.UserRepo) *UserHandler {
 
 func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
 	var ru model.RegisterUser
 	err := json.NewDecoder(r.Body).Decode(&ru)
 	if err != nil {
@@ -29,16 +28,16 @@ func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = uh.ur.GetUserIDByEmail(ru.Email)
-	if err == nil {
-		log.Printf("email used")
-		http.Error(w, "email is already in used", http.StatusBadRequest)
-		return
-	}
-
 	if ru.Email == "" || ru.Password == "" {
 		log.Printf("empty email or password")
 		http.Error(w, "email or pasword is empty", http.StatusBadRequest)
+		return
+	}
+
+	_, err = uh.ur.GetUserByEmail(ru.Email)
+	if err == nil {
+		log.Printf("email used")
+		http.Error(w, "email is already in used", http.StatusBadRequest)
 		return
 	}
 
@@ -63,6 +62,44 @@ func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = json.NewEncoder(w).Encode(u)
+	if err != nil {
+		log.Printf("encoding user: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (uh UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var lu model.RegisterUser
+	err := json.NewDecoder(r.Body).Decode(&lu)
+	if err != nil {
+		log.Printf("decoding login user: %s", err)
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	if lu.Email == "" || lu.Password == "" {
+		log.Printf("empty email or password")
+		http.Error(w, "email or pasword is empty", http.StatusBadRequest)
+		return
+	}
+
+	u, err := uh.ur.GetUserByEmail(lu.Email)
+	if err != nil {
+		log.Printf("email not found")
+		http.Error(w, "email not found", http.StatusNotFound)
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(lu.Password))
+	if err != nil {
+		log.Printf("password not match")
+		http.Error(w, "password doesn't match", http.StatusNotFound)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(map[string]string{"message": "success"})
 	if err != nil {
 		log.Printf("encoding user: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)

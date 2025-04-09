@@ -34,6 +34,7 @@ func main() {
 	// define routes
 	mux.HandleFunc("/", homeHandler)
 	mux.HandleFunc("POST /register", uh.RegisterUser)
+	mux.HandleFunc("GET /login", uh.LoginUser)
 
 	// serving and listening
 	fmt.Printf("serving and listening on :8080...")

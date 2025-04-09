@@ -28,15 +28,16 @@ func (ur UserRepo) CreateUser(uPtr *model.User) error {
 	return nil
 }
 
-func (ur UserRepo) GetUserIDByEmail(email string) (int, error) {
-	var id int
+func (ur UserRepo) GetUserByEmail(email string) (*model.User, error) {
+	var u model.User
 	queryStr := `
-	SELECT  id FROM users
+	SELECT  id, passwordhash, role FROM users
 	WHERE email = $1;`
 	row := ur.DB.QueryRow(queryStr, email)
-	err := row.Scan(&id)
+	err := row.Scan(&u.ID, &u.PasswordHash, &u.Role)
 	if err != nil {
-		return -1, fmt.Errorf("selecting user by email in repo: %w", err)
+		return nil, fmt.Errorf("selecting user by email in repo: %w", err)
 	}
-	return id, nil
+	u.Email = email
+	return &u, nil
 }
