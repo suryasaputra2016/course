@@ -1,0 +1,11 @@
+services:
+  # Our Postgres database
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: baloo
+      POSTGRES_PASSWORD: junglebook
+      POSTGRES_DB: coursedb
+    ports:
+      - 5432:5432
