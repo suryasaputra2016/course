@@ -36,7 +36,7 @@ func PrepareTables(db *sql.DB) error {
 	dbString := `
 		CREATE TABLE IF NOT EXISTS users (
 		id SERIAL PRIMARY KEY,
-		email TEXT,
+		email TEXT UNIQUE NOT NULL,
 		passwordHash TEXT,
 		role VARCHAR(15)
 		);`

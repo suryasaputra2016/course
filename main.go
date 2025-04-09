@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/suryasaputra2016/course/config"
+	"github.com/suryasaputra2016/course/handler"
+	"github.com/suryasaputra2016/course/repo"
 )
 
 func main() {
@@ -23,11 +25,15 @@ func main() {
 		log.Fatal(fmt.Errorf("preparing table from main: %w", err))
 	}
 
+	ur := repo.NewUserRepo(db)
+	uh := handler.NewUserHandler(ur)
+
 	// define mux
 	mux := http.NewServeMux()
 
 	// define routes
 	mux.HandleFunc("/", homeHandler)
+	mux.HandleFunc("POST /register", uh.RegisterUser)
 
 	// serving and listening
 	fmt.Printf("serving and listening on :8080...")
