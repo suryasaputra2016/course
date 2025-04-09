@@ -48,7 +48,7 @@ func PrepareTables(db *sql.DB) error {
 	querySessionTable := `
 		CREATE TABLE IF NOT EXISTS sessions (
 		id SERIAL PRIMARY KEY,
-		user_id INT UNIQUE NOT NULL REFERENCES users(id),
+		user_id INT NOT NULL REFERENCES users(id),
 		token_hash TEXT
 		);`
 	_, err = db.Exec(querySessionTable)

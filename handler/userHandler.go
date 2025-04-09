@@ -27,28 +27,28 @@ func NewUserHandler(ur *repo.UserRepo, sr *repo.SessionRepo) *UserHandler {
 
 func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var ru model.RegisterUser
-	err := json.NewDecoder(r.Body).Decode(&ru)
+	var regUser model.RegisterUser
+	err := json.NewDecoder(r.Body).Decode(&regUser)
 	if err != nil {
 		log.Printf("decoding register user: %s", err)
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
 
-	if ru.Email == "" || ru.Password == "" {
+	if regUser.Email == "" || regUser.Password == "" {
 		log.Printf("empty email or password")
 		http.Error(w, "email or pasword is empty", http.StatusBadRequest)
 		return
 	}
 
-	_, err = uh.ur.GetUserByEmail(ru.Email)
+	_, err = uh.ur.GetUserByEmail(regUser.Email)
 	if err == nil {
 		log.Printf("email used")
 		http.Error(w, "email is already in used", http.StatusBadRequest)
 		return
 	}
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(ru.Password), bcrypt.DefaultCost)
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(regUser.Password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Printf("hashing password: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -56,7 +56,7 @@ func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := model.User{
-		Email:        ru.Email,
+		Email:        regUser.Email,
 		PasswordHash: string(passwordHash),
 		Role:         "user",
 	}
@@ -137,6 +137,40 @@ func (uh UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(map[string]string{"token": token})
 	if err != nil {
 		log.Printf("encoding user: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (uh UserHandler) CheckLoginUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var tokenMap map[string]string
+	err := json.NewDecoder(r.Body).Decode(&tokenMap)
+	if err != nil {
+		log.Printf("decoding token map: %s", err)
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	if tokenMap["token"] == "" {
+		log.Printf("token map empty: %s", err)
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	tokenHash := sha256.Sum256([]byte(tokenMap["token"]))
+	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
+
+	session, err := uh.sr.GetSessionFromTokenHash(tokenHashString)
+	if err != nil {
+		log.Printf("session hash not found: %s", err)
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(session)
+	if err != nil {
+		log.Printf("encoding session: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}

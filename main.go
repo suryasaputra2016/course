@@ -36,6 +36,7 @@ func main() {
 	mux.HandleFunc("/", homeHandler)
 	mux.HandleFunc("POST /register", uh.RegisterUser)
 	mux.HandleFunc("GET /login", uh.LoginUser)
+	mux.HandleFunc("GET /checklogin", uh.CheckLoginUser)
 
 	// serving and listening
 	fmt.Printf("serving and listening on :8080...")
