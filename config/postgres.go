@@ -31,3 +31,18 @@ func ClosePostgres(db *sql.DB) error {
 	}
 	return nil
 }
+
+func PrepareTables(db *sql.DB) error {
+	dbString := `
+		CREATE TABLE IF NOT EXISTS users (
+		id SERIAL PRIMARY KEY,
+		email TEXT,
+		passwordHash TEXT,
+		role VARCHAR(15)
+		);`
+	_, err := db.Exec(dbString)
+	if err != nil {
+		return fmt.Errorf("creating users table: %w", err)
+	}
+	return nil
+}

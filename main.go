@@ -17,6 +17,12 @@ func main() {
 	defer config.ClosePostgres(db)
 	fmt.Println("postgres database connected.")
 
+	// migration
+	err = config.PrepareTables(db)
+	if err != nil {
+		log.Fatal(fmt.Errorf("preparing table from main: %w", err))
+	}
+
 	// define mux
 	mux := http.NewServeMux()
 
