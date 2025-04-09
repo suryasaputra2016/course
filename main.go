@@ -26,7 +26,8 @@ func main() {
 	}
 
 	ur := repo.NewUserRepo(db)
-	uh := handler.NewUserHandler(ur)
+	sr := repo.NewSessionRepo(db)
+	uh := handler.NewUserHandler(ur, sr)
 
 	// define mux
 	mux := http.NewServeMux()

@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -12,10 +15,14 @@ import (
 
 type UserHandler struct {
 	ur *repo.UserRepo
+	sr *repo.SessionRepo
 }
 
-func NewUserHandler(ur *repo.UserRepo) *UserHandler {
-	return &UserHandler{ur: ur}
+func NewUserHandler(ur *repo.UserRepo, sr *repo.SessionRepo) *UserHandler {
+	return &UserHandler{
+		ur: ur,
+		sr: sr,
+	}
 }
 
 func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
@@ -80,26 +87,54 @@ func (uh UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if lu.Email == "" || lu.Password == "" {
-		log.Printf("empty email or password")
+		log.Printf("empty email or password: %s", err)
 		http.Error(w, "email or pasword is empty", http.StatusBadRequest)
 		return
 	}
 
 	u, err := uh.ur.GetUserByEmail(lu.Email)
 	if err != nil {
-		log.Printf("email not found")
+		log.Printf("email not found: %s", err)
 		http.Error(w, "email not found", http.StatusNotFound)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(lu.Password))
 	if err != nil {
-		log.Printf("password not match")
+		log.Printf("password not match: %s", err)
 		http.Error(w, "password doesn't match", http.StatusNotFound)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(map[string]string{"message": "success"})
+	length := 32
+	b := make([]byte, length)
+	nRead, err := rand.Read(b)
+	if err != nil {
+		log.Printf("creating random bytes: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	if nRead < length {
+		log.Printf("not enough read bytes: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	token := base64.URLEncoding.EncodeToString(b)
+	tokenHash := sha256.Sum256([]byte(token))
+	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
+
+	ns := model.Session{
+		UserID:    u.ID,
+		TokenHash: tokenHashString,
+	}
+	err = uh.sr.CreateSession(&ns)
+	if err != nil {
+		log.Printf("creating session: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(map[string]string{"token": token})
 	if err != nil {
 		log.Printf("encoding user: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
