@@ -55,20 +55,20 @@ func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := model.User{
+	newUser := model.User{
 		Email:        regUser.Email,
 		PasswordHash: string(passwordHash),
 		Role:         "user",
 	}
 
-	err = uh.ur.CreateUser(&u)
+	err = uh.ur.CreateUser(&newUser)
 	if err != nil {
 		log.Printf("creating user in handler: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(u)
+	err = json.NewEncoder(w).Encode(newUser)
 	if err != nil {
 		log.Printf("encoding user: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -78,56 +78,56 @@ func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 func (uh UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var lu model.RegisterUser
-	err := json.NewDecoder(r.Body).Decode(&lu)
+	var loginUser model.RegisterUser
+	err := json.NewDecoder(r.Body).Decode(&loginUser)
 	if err != nil {
 		log.Printf("decoding login user: %s", err)
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
 
-	if lu.Email == "" || lu.Password == "" {
+	if loginUser.Email == "" || loginUser.Password == "" {
 		log.Printf("empty email or password: %s", err)
 		http.Error(w, "email or pasword is empty", http.StatusBadRequest)
 		return
 	}
 
-	u, err := uh.ur.GetUserByEmail(lu.Email)
+	user, err := uh.ur.GetUserByEmail(loginUser.Email)
 	if err != nil {
 		log.Printf("email not found: %s", err)
 		http.Error(w, "email not found", http.StatusNotFound)
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(lu.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(loginUser.Password))
 	if err != nil {
 		log.Printf("password not match: %s", err)
 		http.Error(w, "password doesn't match", http.StatusNotFound)
 		return
 	}
 
-	length := 32
-	b := make([]byte, length)
-	nRead, err := rand.Read(b)
+	lengthByte := 32
+	tokenByte := make([]byte, lengthByte)
+	totalRead, err := rand.Read(tokenByte)
 	if err != nil {
 		log.Printf("creating random bytes: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	if nRead < length {
+	if totalRead < lengthByte {
 		log.Printf("not enough read bytes: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	token := base64.URLEncoding.EncodeToString(b)
+	token := base64.URLEncoding.EncodeToString(tokenByte)
 	tokenHash := sha256.Sum256([]byte(token))
 	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
 
-	ns := model.Session{
-		UserID:    u.ID,
+	newSession := model.Session{
+		UserID:    user.ID,
 		TokenHash: tokenHashString,
 	}
-	err = uh.sr.CreateSession(&ns)
+	err = uh.sr.CreateSession(&newSession)
 	if err != nil {
 		log.Printf("creating session: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)

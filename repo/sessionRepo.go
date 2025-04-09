@@ -29,16 +29,16 @@ func (sr SessionRepo) CreateSession(sPtr *model.Session) error {
 }
 
 func (sr SessionRepo) GetSessionFromTokenHash(tokenHash string) (*model.Session, error) {
-	var s model.Session
+	var session model.Session
 	queryStr := `
 		SELECT id, user_id
 		FROM sessions
 		WHERE token_hash = $1`
 	row := sr.db.QueryRow(queryStr, tokenHash)
-	err := row.Scan(&s.ID, &s.UserID)
+	err := row.Scan(&session.ID, &session.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("selecting session: %w", err)
 	}
-	s.TokenHash = tokenHash
-	return &s, nil
+	session.TokenHash = tokenHash
+	return &session, nil
 }
