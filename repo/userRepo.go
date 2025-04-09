@@ -27,3 +27,16 @@ func (ur UserRepo) CreateUser(uPtr *model.User) error {
 	}
 	return nil
 }
+
+func (ur UserRepo) GetUserIDByEmail(email string) (int, error) {
+	var id int
+	queryStr := `
+	SELECT  id FROM users
+	WHERE email = $1;`
+	row := ur.DB.QueryRow(queryStr, email)
+	err := row.Scan(&id)
+	if err != nil {
+		return -1, fmt.Errorf("selecting user by email in repo: %w", err)
+	}
+	return id, nil
+}

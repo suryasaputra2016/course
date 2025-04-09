@@ -29,9 +29,16 @@ func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, err = uh.ur.GetUserIDByEmail(ru.Email)
+	if err == nil {
+		log.Printf("email used")
+		http.Error(w, "email is already in used", http.StatusBadRequest)
+		return
+	}
+
 	if ru.Email == "" || ru.Password == "" {
 		log.Printf("empty email or password")
-		http.Error(w, "bad request", http.StatusBadRequest)
+		http.Error(w, "email or pasword is empty", http.StatusBadRequest)
 		return
 	}
 

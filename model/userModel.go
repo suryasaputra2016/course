@@ -3,7 +3,7 @@ package model
 type User struct {
 	ID           int    `json:"id"`
 	Email        string `json:"email"`
-	PasswordHash string
+	PasswordHash string `json:"-"`
 	Role         string `json:"role"`
 }
 
