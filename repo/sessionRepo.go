@@ -33,7 +33,7 @@ func (sr SessionRepo) GetSessionFromTokenHash(tokenHash string) (*model.Session,
 	queryStr := `
 		SELECT id, user_id
 		FROM sessions
-		WHERE token_hash = $1`
+		WHERE token_hash = $1;`
 	row := sr.db.QueryRow(queryStr, tokenHash)
 	err := row.Scan(&session.ID, &session.UserID)
 	if err != nil {
@@ -41,4 +41,22 @@ func (sr SessionRepo) GetSessionFromTokenHash(tokenHash string) (*model.Session,
 	}
 	session.TokenHash = tokenHash
 	return &session, nil
+}
+
+func (sr SessionRepo) DeleteSessionFromTokenHash(tokenHash string) error {
+	queryStr := `
+		DELETE FROM sessions
+			WHERE token_hash = $1`
+	res, err := sr.db.Exec(queryStr, tokenHash)
+	if err != nil {
+		return fmt.Errorf("deleting session: %w", err)
+	}
+	deletedRow, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("checking deleted row: %w", err)
+	}
+	if deletedRow == 0 {
+		return fmt.Errorf("zero deleted row")
+	}
+	return nil
 }

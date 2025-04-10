@@ -25,6 +25,7 @@ func main() {
 		log.Fatal(fmt.Errorf("preparing table from main: %w", err))
 	}
 
+	// repos and handlers
 	ur := repo.NewUserRepo(db)
 	sr := repo.NewSessionRepo(db)
 	uh := handler.NewUserHandler(ur, sr)
@@ -35,7 +36,8 @@ func main() {
 	// define routes
 	mux.HandleFunc("/", homeHandler)
 	mux.HandleFunc("POST /register", uh.RegisterUser)
-	mux.HandleFunc("GET /login", uh.LoginUser)
+	mux.HandleFunc("POST /login", uh.LoginUser)
+	mux.HandleFunc("DELETE /logout", uh.LogoutUser)
 	mux.HandleFunc("GET /checklogin", uh.CheckLoginUser)
 
 	// serving and listening

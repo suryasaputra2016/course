@@ -32,13 +32,14 @@ func ClosePostgres(db *sql.DB) error {
 	return nil
 }
 
+// prepare some tables
 func PrepareTables(db *sql.DB) error {
 	queryUserTable := `
 		CREATE TABLE IF NOT EXISTS users (
-		id SERIAL PRIMARY KEY,
-		email TEXT UNIQUE NOT NULL,
-		password_hash TEXT,
-		role VARCHAR(15)
+			id SERIAL PRIMARY KEY,
+			email TEXT UNIQUE NOT NULL,
+			password_hash TEXT,
+			role VARCHAR(15)
 		);`
 	_, err := db.Exec(queryUserTable)
 	if err != nil {
@@ -47,9 +48,9 @@ func PrepareTables(db *sql.DB) error {
 
 	querySessionTable := `
 		CREATE TABLE IF NOT EXISTS sessions (
-		id SERIAL PRIMARY KEY,
-		user_id INT NOT NULL REFERENCES users(id),
-		token_hash TEXT
+			id SERIAL PRIMARY KEY,
+			user_id INT NOT NULL REFERENCES users(id),
+			token_hash TEXT
 		);`
 	_, err = db.Exec(querySessionTable)
 	if err != nil {

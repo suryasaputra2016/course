@@ -153,7 +153,7 @@ func (uh UserHandler) CheckLoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if tokenMap["token"] == "" {
-		log.Printf("token map empty: %s", err)
+		log.Printf("token map empty")
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
@@ -174,4 +174,34 @@ func (uh UserHandler) CheckLoginUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+}
+
+func (uh UserHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var tokenMap map[string]string
+	err := json.NewDecoder(r.Body).Decode(&tokenMap)
+	if err != nil {
+		log.Printf("decoding token map: %s", err)
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	if tokenMap["token"] == "" {
+		log.Printf("token map empty")
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	tokenHash := sha256.Sum256([]byte(tokenMap["token"]))
+	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
+
+	err = uh.sr.DeleteSessionFromTokenHash(tokenHashString)
+	if err != nil {
+		log.Printf("deleting session from handler: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	ee, _ := json.Marshal(map[string]string{"message": "log out sucessful"})
+	w.Write(ee)
 }
