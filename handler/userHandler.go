@@ -7,7 +7,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/smtp"
+	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/suryasaputra2016/course/model"
 	"github.com/suryasaputra2016/course/repo"
 	"golang.org/x/crypto/bcrypt"
@@ -202,6 +205,32 @@ func (uh UserHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ee, _ := json.Marshal(map[string]string{"message": "log out sucessful"})
-	w.Write(ee)
+	response, _ := json.Marshal(map[string]string{"message": "log out sucessful"})
+	w.Write(response)
+}
+
+func (uh UserHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	godotenv.Load()
+	username := os.Getenv("USERNAME")
+	password := os.Getenv("PASSWORD")
+	host := os.Getenv("HOST")
+	address := os.Getenv("ADDRESS")
+
+	auth := smtp.PlainAuth("", username, password, host)
+	headers := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\"; "
+	subject := "this is a sample subject"
+	htmlBody := "<h1>Hi!</h1><p>This is a sample body.</p>"
+	message := "Subject: " + subject + "\n" + headers + "\n\n" + htmlBody
+
+	err := smtp.SendMail(address, auth, "course@admin.com", []string{"john@example.com"}, []byte(message))
+	if err != nil {
+		log.Printf("sending email: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	response, _ := json.Marshal(map[string]string{"message": "email sent"})
+	w.Write(response)
 }

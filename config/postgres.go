@@ -3,13 +3,16 @@ package config
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 // connect to postgres database
 func ConnectPostgres() (*sql.DB, error) {
-	dsn := "host=localhost port=5432 user=baloo password=junglebook dbname=coursedb sslmode=disable"
+	godotenv.Load()
+	dsn := os.Getenv("DATABASE_STRING")
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("opening postgres: %w", err)
