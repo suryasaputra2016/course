@@ -28,7 +28,8 @@ func main() {
 	// repos and handlers
 	ur := repo.NewUserRepo(db)
 	sr := repo.NewSessionRepo(db)
-	uh := handler.NewUserHandler(ur, sr)
+	prr := repo.NewPasswordResetRepo(db)
+	uh := handler.NewUserHandler(ur, sr, prr)
 
 	// define mux
 	mux := http.NewServeMux()
@@ -38,8 +39,9 @@ func main() {
 	mux.HandleFunc("POST /register", uh.RegisterUser)
 	mux.HandleFunc("POST /login", uh.LoginUser)
 	mux.HandleFunc("DELETE /logout", uh.LogoutUser)
+	mux.HandleFunc("POST /resetpassword", uh.ResetPassword)
+
 	mux.HandleFunc("GET /checklogin", uh.CheckLoginUser)
-	mux.HandleFunc("POST /sendemail", uh.SendEmail)
 
 	// serving and listening
 	fmt.Printf("serving and listening on :8080...")

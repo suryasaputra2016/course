@@ -7,24 +7,29 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"net/smtp"
-	"os"
+	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/suryasaputra2016/course/model"
 	"github.com/suryasaputra2016/course/repo"
+	"github.com/suryasaputra2016/course/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
-	ur *repo.UserRepo
-	sr *repo.SessionRepo
+	ur  *repo.UserRepo
+	sr  *repo.SessionRepo
+	prr *repo.PasswordResetRepo
 }
 
-func NewUserHandler(ur *repo.UserRepo, sr *repo.SessionRepo) *UserHandler {
+func NewUserHandler(
+	ur *repo.UserRepo,
+	sr *repo.SessionRepo,
+	prr *repo.PasswordResetRepo,
+) *UserHandler {
 	return &UserHandler{
-		ur: ur,
-		sr: sr,
+		ur:  ur,
+		sr:  sr,
+		prr: prr,
 	}
 }
 
@@ -147,6 +152,7 @@ func (uh UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 func (uh UserHandler) CheckLoginUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	var tokenMap map[string]string
 	err := json.NewDecoder(r.Body).Decode(&tokenMap)
 	if err != nil {
@@ -209,28 +215,69 @@ func (uh UserHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func (uh UserHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
+func (uh UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	godotenv.Load()
-	username := os.Getenv("USERNAME")
-	password := os.Getenv("PASSWORD")
-	host := os.Getenv("HOST")
-	address := os.Getenv("ADDRESS")
-
-	auth := smtp.PlainAuth("", username, password, host)
-	headers := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\"; "
-	subject := "this is a sample subject"
-	htmlBody := "<h1>Hi!</h1><p>This is a sample body.</p>"
-	message := "Subject: " + subject + "\n" + headers + "\n\n" + htmlBody
-
-	err := smtp.SendMail(address, auth, "course@admin.com", []string{"john@example.com"}, []byte(message))
+	var emailMap map[string]string
+	err := json.NewDecoder(r.Body).Decode(&emailMap)
 	if err != nil {
-		log.Printf("sending email: %s", err)
+		log.Printf("decoding email map: %s", err)
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	email := emailMap["email"]
+	if email == "" {
+		log.Printf("email map empty")
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	err = utils.CheckEmailFormat(email)
+	if err != nil {
+		log.Printf("email not well formatted: %s", err)
+		http.Error(w, "bad request", http.StatusNotFound)
+		return
+	}
+
+	user, err := uh.ur.GetUserByEmail(email)
+	if err != nil {
+		log.Printf("email not found: %s", err)
+		http.Error(w, "email not found", http.StatusNotFound)
+		return
+	}
+
+	lengthByte := 32
+	tokenByte := make([]byte, lengthByte)
+	totalRead, err := rand.Read(tokenByte)
+	if err != nil {
+		log.Printf("creating random bytes: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	if totalRead < lengthByte {
+		log.Printf("not enough read bytes: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	token := base64.URLEncoding.EncodeToString(tokenByte)
+	tokenHash := sha256.Sum256([]byte(token))
+	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
+
+	newPasswordReset := model.PasswordReset{
+		UserID:         user.ID,
+		TokenHash:      tokenHashString,
+		ExpirationTime: time.Now().Local().Add(5 * time.Minute),
+	}
+	uh.prr.Create(&newPasswordReset)
+
+	err = utils.SendPasswordResetEmail(email, token)
+	if err != nil {
+		log.Printf("sending email from handler: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	response, _ := json.Marshal(map[string]string{"message": "email sent"})
+	response, _ := json.Marshal(map[string]string{"message": "reset email sent"})
 	w.Write(response)
 }

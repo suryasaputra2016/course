@@ -52,12 +52,25 @@ func PrepareTables(db *sql.DB) error {
 	querySessionTable := `
 		CREATE TABLE IF NOT EXISTS sessions (
 			id SERIAL PRIMARY KEY,
-			user_id INT NOT NULL REFERENCES users(id),
-			token_hash TEXT
+			user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			token_hash TEXT UNIQUE NOT NULL
 		);`
 	_, err = db.Exec(querySessionTable)
 	if err != nil {
 		return fmt.Errorf("creating sessions table: %w", err)
 	}
+
+	passwordResetSessionTable := `
+		CREATE TABLE IF NOT EXISTS password_resets (
+			id SERIAL PRIMARY KEY,
+			user_id INT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			token_hash TEXT UNIQUE NOT NULL,
+			expiration_time TIMESTAMPTZ NOT NULL
+		);`
+	_, err = db.Exec(passwordResetSessionTable)
+	if err != nil {
+		return fmt.Errorf("creating password reset table: %w", err)
+	}
+
 	return nil
 }
