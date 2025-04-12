@@ -1,3 +1,5 @@
-make reset password email work
 create update password service
+login after update password
+login after create user?
 create email verification
+check password reset databse before and after reset, also check expiration

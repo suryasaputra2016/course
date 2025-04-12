@@ -49,7 +49,7 @@ func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = uh.ur.GetUserByEmail(regUser.Email)
+	_, err = uh.ur.GetByEmail(regUser.Email)
 	if err == nil {
 		log.Printf("email used")
 		http.Error(w, "email is already in used", http.StatusBadRequest)
@@ -69,7 +69,7 @@ func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		Role:         "user",
 	}
 
-	err = uh.ur.CreateUser(&newUser)
+	err = uh.ur.Create(&newUser)
 	if err != nil {
 		log.Printf("creating user in handler: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -100,7 +100,7 @@ func (uh UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := uh.ur.GetUserByEmail(loginUser.Email)
+	user, err := uh.ur.GetByEmail(loginUser.Email)
 	if err != nil {
 		log.Printf("email not found: %s", err)
 		http.Error(w, "email not found", http.StatusNotFound)
@@ -135,7 +135,7 @@ func (uh UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		UserID:    user.ID,
 		TokenHash: tokenHashString,
 	}
-	err = uh.sr.CreateSession(&newSession)
+	err = uh.sr.Create(&newSession)
 	if err != nil {
 		log.Printf("creating session: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -170,7 +170,7 @@ func (uh UserHandler) CheckLoginUser(w http.ResponseWriter, r *http.Request) {
 	tokenHash := sha256.Sum256([]byte(tokenMap["token"]))
 	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
 
-	session, err := uh.sr.GetSessionFromTokenHash(tokenHashString)
+	session, err := uh.sr.GetFromTokenHash(tokenHashString)
 	if err != nil {
 		log.Printf("session hash not found: %s", err)
 		http.Error(w, "bad request", http.StatusBadRequest)
@@ -204,7 +204,7 @@ func (uh UserHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	tokenHash := sha256.Sum256([]byte(tokenMap["token"]))
 	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
 
-	err = uh.sr.DeleteSessionFromTokenHash(tokenHashString)
+	err = uh.sr.DeleteFromTokenHash(tokenHashString)
 	if err != nil {
 		log.Printf("deleting session from handler: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -240,7 +240,7 @@ func (uh UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := uh.ur.GetUserByEmail(email)
+	user, err := uh.ur.GetByEmail(email)
 	if err != nil {
 		log.Printf("email not found: %s", err)
 		http.Error(w, "email not found", http.StatusNotFound)
@@ -271,6 +271,8 @@ func (uh UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	uh.prr.Create(&newPasswordReset)
 
+	// delete previous reset database if any
+
 	err = utils.SendPasswordResetEmail(email, token)
 	if err != nil {
 		log.Printf("sending email from handler: %s", err)
@@ -279,5 +281,62 @@ func (uh UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response, _ := json.Marshal(map[string]string{"message": "reset email sent"})
+	w.Write(response)
+}
+
+func (uh UserHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-type", "application/json")
+
+	var passChange model.PasswordChange
+	err := json.NewDecoder(r.Body).Decode(&passChange)
+	if err != nil {
+		log.Printf("decoding token: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	token := passChange.Token
+	if token == "" {
+		log.Printf("empty token")
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	tokenHash := sha256.Sum256([]byte(token))
+	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
+
+	passResetPtr, err := uh.prr.GetFromTokenHash(tokenHashString)
+	if err != nil {
+		log.Printf("getting password reset from handler: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// check expiration date
+
+	user, err := uh.ur.GetByID(passResetPtr.UserID)
+	if err != nil {
+		log.Printf("getting user from handler: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(passChange.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("hashing password: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	err = uh.ur.UpdatePassword(user.ID, string(passwordHash))
+	if err != nil {
+		log.Printf("updating user password: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// delete reset database
+
+	response, _ := json.Marshal(map[string]string{"message": "password changed success"})
 	w.Write(response)
 }

@@ -31,21 +31,31 @@ func SendPasswordResetEmail(email, token string) error {
 	host := os.Getenv("HOST")
 	address := os.Getenv("ADDRESS")
 
+	auth := smtp.PlainAuth("", username, password, host)
+	subject := "Reset Password"
 	from := mail.Address{
 		Name:    "admin",
 		Address: "admin@course.com",
 	}
-
 	to := mail.Address{
-		Name:    "name",
+		Name:    "mr./mrs.",
 		Address: email,
 	}
+	htmlBody := "<h1>Reset password link</h1><p>Link: <a href=\"#\">" + token + "</a></p>"
 
-	auth := smtp.PlainAuth("", username, password, host)
-	headers := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\nFrom: " + from.String() + "\nTo: " + to.String()
-	subject := "Reset Password"
-	htmlBody := "<h1>Reset password link</h1><p>Link: <a href=\"#\">click here: " + token + "</a></p>"
-	message := "Subject: " + subject + "\n" + headers + "\n\n" + htmlBody
+	headers := map[string]string{
+		"Subject":      subject,
+		"From":         from.String(),
+		"To":           to.String(),
+		"MIME-version": "1.0;",
+		"Content-Type": "text/html; charset=\"UTF-8\";",
+	}
+
+	var message string
+	for k, v := range headers {
+		message += k + ": " + v + "\n"
+	}
+	message += "\n" + htmlBody
 
 	err := smtp.SendMail(address, auth, from.Address, []string{to.Address}, []byte(message))
 	if err != nil {

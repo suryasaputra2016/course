@@ -8,3 +8,8 @@ type PasswordReset struct {
 	TokenHash      string    `json:"token_hash"`
 	ExpirationTime time.Time `json:"expiration_time"`
 }
+
+type PasswordChange struct {
+	Token       string `json:"token"`
+	NewPassword string `json:"new_password"`
+}

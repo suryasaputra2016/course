@@ -40,11 +40,12 @@ func main() {
 	mux.HandleFunc("POST /login", uh.LoginUser)
 	mux.HandleFunc("DELETE /logout", uh.LogoutUser)
 	mux.HandleFunc("POST /resetpassword", uh.ResetPassword)
+	mux.HandleFunc("PUT /updatepassword", uh.UpdatePassword)
 
 	mux.HandleFunc("GET /checklogin", uh.CheckLoginUser)
 
 	// serving and listening
-	fmt.Printf("serving and listening on :8080...")
+	fmt.Println("serving and listening on :8080...")
 	err = http.ListenAndServe(":8080", mux)
 	if err != nil {
 		log.Fatal(fmt.Errorf("listening and serving: %w", err))

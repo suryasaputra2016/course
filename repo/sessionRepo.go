@@ -15,7 +15,7 @@ func NewSessionRepo(db *sql.DB) *SessionRepo {
 	return &SessionRepo{db: db}
 }
 
-func (sr SessionRepo) CreateSession(sPtr *model.Session) error {
+func (sr SessionRepo) Create(sPtr *model.Session) error {
 	queryStr := `
 		INSERT INTO sessions (user_id, token_hash)
 		VALUES ($1, $2)
@@ -28,7 +28,7 @@ func (sr SessionRepo) CreateSession(sPtr *model.Session) error {
 	return nil
 }
 
-func (sr SessionRepo) GetSessionFromTokenHash(tokenHash string) (*model.Session, error) {
+func (sr SessionRepo) GetFromTokenHash(tokenHash string) (*model.Session, error) {
 	var session model.Session
 	queryStr := `
 		SELECT id, user_id
@@ -43,7 +43,7 @@ func (sr SessionRepo) GetSessionFromTokenHash(tokenHash string) (*model.Session,
 	return &session, nil
 }
 
-func (sr SessionRepo) DeleteSessionFromTokenHash(tokenHash string) error {
+func (sr SessionRepo) DeleteFromTokenHash(tokenHash string) error {
 	queryStr := `
 		DELETE FROM sessions
 			WHERE token_hash = $1`
