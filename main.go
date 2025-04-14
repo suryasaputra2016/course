@@ -38,6 +38,7 @@ func main() {
 	mux.HandleFunc("/", homeHandler)
 	mux.HandleFunc("POST /register", uh.RegisterUser)
 	mux.HandleFunc("POST /login", uh.LoginUser)
+	mux.HandleFunc("PUT /verifyemail/{userid}", uh.VerifyEmail)
 	mux.HandleFunc("DELETE /logout", uh.LogoutUser)
 	mux.HandleFunc("POST /resetpassword", uh.ResetPassword)
 	mux.HandleFunc("PUT /updatepassword", uh.UpdatePassword)

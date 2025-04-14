@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/suryasaputra2016/course/model"
@@ -143,6 +144,38 @@ func (uh UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = json.NewEncoder(w).Encode(map[string]string{"token": token})
+	if err != nil {
+		log.Printf("encoding user: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (uh UserHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	userIDString := r.PathValue("userid")
+	userID, err := strconv.Atoi(userIDString)
+	if err != nil {
+		log.Printf("verifying email, user id not found: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = uh.ur.GetByID(userID)
+	if err != nil {
+		log.Printf("user id not found: %s", err)
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+
+	err = uh.ur.UpdateEmailVerification(userID)
+	if err != nil {
+		log.Printf("verifying email: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(map[string]string{"message": "email verification success"})
 	if err != nil {
 		log.Printf("encoding user: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)

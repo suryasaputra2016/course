@@ -42,6 +42,7 @@ func PrepareTables(db *sql.DB) error {
 			id SERIAL PRIMARY KEY,
 			email TEXT UNIQUE NOT NULL,
 			password_hash TEXT,
+			is_verified BOOL DEFAULT FALSE,
 			role VARCHAR(15)
 		);`
 	_, err := db.Exec(queryUserTable)

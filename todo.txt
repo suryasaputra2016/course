@@ -1,5 +1,7 @@
-create update password service
 login after update password
+send email verification after sign in
 login after create user?
 create email verification
-check password reset databse before and after reset, also check expiration
+check password reset database before and after reset, also check expiration
+refactor
+debug email check when register
