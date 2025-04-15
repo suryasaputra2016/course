@@ -1,9 +1,6 @@
 package handler
 
 import (
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -35,7 +32,6 @@ func NewUserHandler(
 }
 
 func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	var regUser model.RegisterUser
 	err := json.NewDecoder(r.Body).Decode(&regUser)
 	if err != nil {
@@ -86,7 +82,6 @@ func (uh UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uh UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	var loginUser model.RegisterUser
 	err := json.NewDecoder(r.Body).Decode(&loginUser)
 	if err != nil {
@@ -115,22 +110,13 @@ func (uh UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lengthByte := 32
-	tokenByte := make([]byte, lengthByte)
-	totalRead, err := rand.Read(tokenByte)
+	token, err := utils.GenerateToken(32)
 	if err != nil {
-		log.Printf("creating random bytes: %s", err)
+		log.Printf("generating token: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	if totalRead < lengthByte {
-		log.Printf("not enough read bytes: %s", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-	token := base64.URLEncoding.EncodeToString(tokenByte)
-	tokenHash := sha256.Sum256([]byte(token))
-	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
+	tokenHashString := utils.HashToken(token)
 
 	newSession := model.Session{
 		UserID:    user.ID,
@@ -152,7 +138,6 @@ func (uh UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uh UserHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	userIDString := r.PathValue("userid")
 	userID, err := strconv.Atoi(userIDString)
 	if err != nil {
@@ -184,8 +169,6 @@ func (uh UserHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uh UserHandler) CheckLoginUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	var tokenMap map[string]string
 	err := json.NewDecoder(r.Body).Decode(&tokenMap)
 	if err != nil {
@@ -200,8 +183,7 @@ func (uh UserHandler) CheckLoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenHash := sha256.Sum256([]byte(tokenMap["token"]))
-	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
+	tokenHashString := utils.HashToken(tokenMap["token"])
 
 	session, err := uh.sr.GetFromTokenHash(tokenHashString)
 	if err != nil {
@@ -219,7 +201,6 @@ func (uh UserHandler) CheckLoginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uh UserHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	var tokenMap map[string]string
 	err := json.NewDecoder(r.Body).Decode(&tokenMap)
 	if err != nil {
@@ -234,8 +215,7 @@ func (uh UserHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenHash := sha256.Sum256([]byte(tokenMap["token"]))
-	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
+	tokenHashString := utils.HashToken(tokenMap["token"])
 
 	err = uh.sr.DeleteFromTokenHash(tokenHashString)
 	if err != nil {
@@ -244,13 +224,16 @@ func (uh UserHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, _ := json.Marshal(map[string]string{"message": "log out sucessful"})
+	response, err := json.Marshal(map[string]string{"message": "log out sucessful"})
+	if err != nil {
+		log.Printf("marshaling data to json: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 	w.Write(response)
 }
 
 func (uh UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	var emailMap map[string]string
 	err := json.NewDecoder(r.Body).Decode(&emailMap)
 	if err != nil {
@@ -280,22 +263,13 @@ func (uh UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lengthByte := 32
-	tokenByte := make([]byte, lengthByte)
-	totalRead, err := rand.Read(tokenByte)
+	token, err := utils.GenerateToken(32)
 	if err != nil {
-		log.Printf("creating random bytes: %s", err)
+		log.Printf("generating token: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	if totalRead < lengthByte {
-		log.Printf("not enough read bytes: %s", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-	token := base64.URLEncoding.EncodeToString(tokenByte)
-	tokenHash := sha256.Sum256([]byte(token))
-	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
+	tokenHashString := utils.HashToken(token)
 
 	newPasswordReset := model.PasswordReset{
 		UserID:         user.ID,
@@ -313,13 +287,16 @@ func (uh UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, _ := json.Marshal(map[string]string{"message": "reset email sent"})
+	response, err := json.Marshal(map[string]string{"message": "reset email sent"})
+	if err != nil {
+		log.Printf("marshaling data to json: %s", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 	w.Write(response)
 }
 
 func (uh UserHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-type", "application/json")
-
 	var passChange model.PasswordChange
 	err := json.NewDecoder(r.Body).Decode(&passChange)
 	if err != nil {
@@ -335,8 +312,7 @@ func (uh UserHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenHash := sha256.Sum256([]byte(token))
-	tokenHashString := base64.URLEncoding.EncodeToString(tokenHash[:])
+	tokenHashString := utils.HashToken(token)
 
 	passResetPtr, err := uh.prr.GetFromTokenHash(tokenHashString)
 	if err != nil {

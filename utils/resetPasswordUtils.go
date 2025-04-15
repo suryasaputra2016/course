@@ -15,7 +15,7 @@ func CheckEmailFormat(email string) error {
 	emailRegex := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
 	re, err := regexp.Compile(emailRegex)
 	if err != nil {
-
+		return errors.New("email regex failed to compiled")
 	}
 	if re.MatchString(email) {
 		return nil

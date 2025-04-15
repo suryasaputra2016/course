@@ -7,6 +7,7 @@ import (
 
 	"github.com/suryasaputra2016/course/config"
 	"github.com/suryasaputra2016/course/handler"
+	"github.com/suryasaputra2016/course/middleware"
 	"github.com/suryasaputra2016/course/repo"
 )
 
@@ -46,8 +47,12 @@ func main() {
 	mux.HandleFunc("GET /checklogin", uh.CheckLoginUser)
 
 	// serving and listening
+	server := http.Server{
+		Addr:    ":8080",
+		Handler: middleware.SetJSONHeader(mux),
+	}
 	fmt.Println("serving and listening on :8080...")
-	err = http.ListenAndServe(":8080", mux)
+	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatal(fmt.Errorf("listening and serving: %w", err))
 	}
