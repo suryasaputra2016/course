@@ -1,7 +1,7 @@
+refactor
 login after update password
 send email verification after sign in
 login after create user?
 create email verification
 check password reset database before and after reset, also check expiration
-refactor
-debug email check when register
+create 404 page

@@ -346,6 +346,14 @@ func (uh UserHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check expiration date
+	expired := time.Now().After(passResetPtr.ExpirationTime)
+	if expired {
+		log.Printf("password reset expired")
+		http.Error(w, "password reset link expired", http.StatusInternalServerError)
+		return
+	}
+
+	// check if new password is the same as the old one
 
 	user, err := uh.ur.GetByID(passResetPtr.UserID)
 	if err != nil {
