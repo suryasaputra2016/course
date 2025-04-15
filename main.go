@@ -32,19 +32,22 @@ func main() {
 	prr := repo.NewPasswordResetRepo(db)
 	uh := handler.NewUserHandler(ur, sr, prr)
 
-	// define mux
+	// define routes
 	mux := http.NewServeMux()
 
-	// define routes
-	mux.HandleFunc("/", homeHandler)
 	mux.HandleFunc("POST /register", uh.RegisterUser)
 	mux.HandleFunc("POST /login", uh.LoginUser)
 	mux.HandleFunc("PUT /verifyemail/{userid}", uh.VerifyEmail)
-	mux.HandleFunc("DELETE /logout", uh.LogoutUser)
-	mux.HandleFunc("POST /resetpassword", uh.ResetPassword)
 	mux.HandleFunc("PUT /updatepassword", uh.UpdatePassword)
-
 	mux.HandleFunc("GET /checklogin", uh.CheckLoginUser)
+
+	accountMux := http.NewServeMux()
+	accountMux.HandleFunc("/", homeHandler)
+	accountMux.HandleFunc("DELETE /logout", uh.LogoutUser)
+	accountMux.HandleFunc("POST /resetpassword", uh.ResetPassword)
+
+	auth := middleware.NewAuthMid(sr)
+	mux.Handle("/", auth.Authorize(accountMux))
 
 	// serving and listening
 	server := http.Server{

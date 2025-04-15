@@ -1,4 +1,3 @@
-refactor
 login after update password
 send email verification after sign in
 login after create user?
