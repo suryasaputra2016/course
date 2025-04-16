@@ -31,6 +31,7 @@ func main() {
 	sr := repo.NewSessionRepo(db)
 	prr := repo.NewPasswordResetRepo(db)
 	uh := handler.NewUserHandler(ur, sr, prr)
+	nfh := handler.NewNotFoundHandler()
 
 	// define routes
 	mux := http.NewServeMux()
@@ -42,7 +43,7 @@ func main() {
 	mux.HandleFunc("GET /checklogin", uh.CheckLoginUser)
 
 	accountMux := http.NewServeMux()
-	accountMux.HandleFunc("/", homeHandler)
+	accountMux.HandleFunc("/", nfh.PageNotFound)
 	accountMux.HandleFunc("DELETE /logout", uh.LogoutUser)
 	accountMux.HandleFunc("POST /resetpassword", uh.ResetPassword)
 
@@ -59,8 +60,4 @@ func main() {
 	if err != nil {
 		log.Fatal(fmt.Errorf("listening and serving: %w", err))
 	}
-}
-
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "8080 served")
 }
