@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	tmpl, err := template.ParseFS(templates.FS, "home.html")
+	tmpl, err := template.ParseFS(templates.FS, "home.html", "header.html", "footer.html")
 	if err != nil {
 		panic("cannot parse files")
 	}

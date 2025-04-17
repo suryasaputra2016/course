@@ -36,5 +36,5 @@ func (hh HomeHandler) ShowHome(w http.ResponseWriter, r *http.Request) {
 
 	json.Unmarshal(body, &home)
 
-	hh.Template.Execute(w, home)
+	hh.Template.ExecuteTemplate(w, "home.html", home)
 }
