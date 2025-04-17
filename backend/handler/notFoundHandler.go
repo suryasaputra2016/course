@@ -23,7 +23,14 @@ func (nfh NotFoundHandler) PageNotFound(w http.ResponseWriter, r *http.Request) 
 }
 
 func (nfh NotFoundHandler) Home(w http.ResponseWriter, r *http.Request) {
-	err := json.NewEncoder(w).Encode(map[string]string{"message": "welcome home"})
+	home := struct {
+		Title string
+		Body  string
+	}{
+		Title: "Welome Home",
+		Body:  "This is the body of home page.",
+	}
+	err := json.NewEncoder(w).Encode(home)
 	if err != nil {
 		log.Printf("encoding message: %s", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)

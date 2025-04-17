@@ -58,9 +58,6 @@ func main() {
 		Addr:    ":8080",
 		Handler: middleware.SetJSONHeader(mux),
 	}
-	fmt.Println("serving and listening on :8080...")
-	err = server.ListenAndServe()
-	if err != nil {
-		log.Fatal(fmt.Errorf("listening and serving: %w", err))
-	}
+	fmt.Println("serving and listening back-end on :8080...")
+	log.Fatal(server.ListenAndServe())
 }
