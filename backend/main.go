@@ -5,10 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/suryasaputra2016/backend/course/config"
-	"github.com/suryasaputra2016/backend/course/handler"
-	"github.com/suryasaputra2016/backend/course/middleware"
-	"github.com/suryasaputra2016/backend/course/repo"
+	"github.com/suryasaputra2016/course/backend/config"
+	"github.com/suryasaputra2016/course/backend/handler"
+	"github.com/suryasaputra2016/course/backend/middleware"
+	"github.com/suryasaputra2016/course/backend/repo"
 )
 
 func main() {

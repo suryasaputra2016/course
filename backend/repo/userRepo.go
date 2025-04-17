@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/suryasaputra2016/backend/course/model"
+	"github.com/suryasaputra2016/course/backend/model"
 )
 
 type UserRepo struct {

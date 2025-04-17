@@ -1,4 +1,4 @@
-module github.com/suryasaputra2016/backend/course
+module github.com/suryasaputra2016/course/backend
 
 go 1.24.1
 

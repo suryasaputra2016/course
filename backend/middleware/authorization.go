@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/suryasaputra2016/backend/course/repo"
-	"github.com/suryasaputra2016/backend/course/utils"
+	"github.com/suryasaputra2016/course/backend/repo"
+	"github.com/suryasaputra2016/course/backend/utils"
 )
 
 type AuthMid struct {

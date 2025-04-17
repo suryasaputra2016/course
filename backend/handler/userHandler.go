@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/suryasaputra2016/backend/course/model"
-	"github.com/suryasaputra2016/backend/course/repo"
-	"github.com/suryasaputra2016/backend/course/utils"
+	"github.com/suryasaputra2016/course/backend/model"
+	"github.com/suryasaputra2016/course/backend/repo"
+	"github.com/suryasaputra2016/course/backend/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
